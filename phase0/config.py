@@ -19,21 +19,22 @@ MONITOR_INDEX = 1
 AUDIO_MODE = "mic-only"       # one of: "mic-only", "mic+system", "none"
 AUDIO_ENABLED = False         # Phase 2 flips this on
 
-# --- Decision 4: proactivity = hybrid (ask + error-chime) ---------------------
-# Silent until hotkey/ask, but auto-narrate when an error string is detected.
-PROACTIVITY = "hybrid"        # one of: "hybrid", "silent", "continuous"
-# Substrings that trigger an auto-narration when found in OCR/narration text.
-ERROR_TRIGGERS = [
-    "error", "traceback", "exception", "failed", "fatal",
-    "cannot", "not found", "denied", "refused", "undefined",
-    "segmentation fault", "panic", "unhandled",
-]
+# --- Decision 4: proactivity = SILENT -----------------------------------------
+# Claude (Tier 2) speaks ONLY when you ask. No unprompted calls, no error-chime.
+# NOTE: this governs Tier 2 (Claude) only. Tier 1 (local screen translation)
+# still runs continuously below (CONTINUOUS_NARRATION) — that's free and local.
+PROACTIVITY = "silent"        # one of: "silent", "hybrid", "continuous"
+
+# --- Tier 1 behavior: translate everything, always (local, $0) ----------------
+# Narrate every changed keyframe on rick's VLM into the timeline. This is the
+# "looking at my screen, translating everything" layer. Costs only electricity.
+CONTINUOUS_NARRATION = True
 
 # --- Capture / narration tuning (levers) --------------------------------------
 FPS = 1.0                     # sample rate (frames/sec)
 HASH_DIFF_THRESHOLD = 6       # pHash hamming distance to count as a new keyframe
 DOWNSCALE_WIDTH = 1280        # width sent to the VLM (cost/latency lever)
-KEEP_LAST = 3                 # keyframes narrated per trigger
+STREAM_WINDOW = 12            # recent timeline lines = the "ask Claude" payload
 
 # --- Tier-1 narrator (local VLM on ricksanchez) -------------------------------
 OLLAMA_HOST = "http://ricksanchez:11434"   # verified reachable from the laptop LAN

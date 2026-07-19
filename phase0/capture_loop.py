@@ -1,20 +1,19 @@
-"""Phase 0 — capture loop (runs on the laptop = the watched machine).
+"""Phase 0 — continuous local translation + silent Claude (runs on the laptop).
 
 Locked decisions (see config.py / AUDIT.md):
-  watched machine = laptop   scope = full-screen
-  audio = mic-only (Phase 2) proactivity = hybrid (ask + error-chime)
+  watched = laptop   scope = full-screen   audio = mic-only (Phase 2)
+  proactivity = SILENT -> Claude speaks only when you ask.
 
-Flow (all local, no hosted calls):
-    full screen @~1fps -> pHash change-detect -> cache keyframes
-      -> narrate via ricksanchez's local VLM when:
-           (a) you press ENTER (explicit ask), or
-           (b) a narration/OCR line contains an error trigger (hybrid auto-chime)
-      -> append every line to timeline.log (the "stream")
-
-Tier-2 (Claude Opus reasoning) is intentionally NOT wired here yet.
+Two tiers, matching the intended model:
+  TIER 1 (local, always-on, $0): full screen @~1fps -> pHash change-detect ->
+    narrate EVERY changed keyframe on ricksanchez's VLM -> append to timeline.log.
+    This is the "watch my screen and translate everything" layer.
+  TIER 2 (Claude Opus, on ask only): NOT wired in Phase 0. Pressing ENTER shows
+    the recent stream window -- exactly the payload the MCP server will hand to
+    Claude when you ask a question. (Voice questions arrive here in Phase 2.)
 
 Run:  pip install -r requirements.txt && python capture_loop.py
-Stop: Ctrl-C.   Ask: press ENTER.
+Stop: Ctrl-C.   Ask (preview the Claude payload): press ENTER.
 """
 from __future__ import annotations
 import io
@@ -22,6 +21,7 @@ import sys
 import time
 import threading
 from pathlib import Path
+from collections import deque
 from datetime import datetime, timezone
 
 import mss
@@ -35,7 +35,8 @@ OUT = Path(__file__).parent / "keyframes"
 TIMELINE = Path(__file__).parent / "timeline.log"
 OUT.mkdir(exist_ok=True)
 
-_recent: list[Path] = []
+# rolling in-memory view of the stream (the window an ask would send to Claude)
+_stream: deque[str] = deque(maxlen=config.STREAM_WINDOW)
 _lock = threading.Lock()
 
 
@@ -54,33 +55,14 @@ def _downscaled_png(img: Image.Image, width: int) -> bytes:
 def _log(source: str, text: str) -> None:
     line = f"[{_ts()}] {source:<6} {text}"
     print(line, flush=True)
+    with _lock:
+        _stream.append(line)
     with TIMELINE.open("a", encoding="utf-8") as f:
         f.write(line + "\n")
 
 
-def _has_error(text: str) -> bool:
-    low = text.lower()
-    return any(t in low for t in config.ERROR_TRIGGERS)
-
-
-def _narrate_recent(reason: str) -> None:
-    with _lock:
-        frames = list(_recent)
-    if not frames:
-        _log("SYS", "no keyframes captured yet")
-        return
-    _log("SYS", f"narrating {len(frames)} keyframe(s) [{reason}]")
-    for p in frames:
-        text = narrate(p.read_bytes())
-        _log("VISION", f"{p.name}: {text}")
-
-
 def capture_thread() -> None:
-    """Full-screen grab @FPS; keep only frames that differ enough (pHash).
-
-    Hybrid proactivity: if a fresh keyframe's quick narration trips an error
-    trigger, auto-narrate without waiting for ENTER.
-    """
+    """TIER 1: full-screen grab @FPS; narrate every changed frame (local, free)."""
     last_hash = None
     with mss.mss() as sct:
         monitor = sct.monitors[config.MONITOR_INDEX]  # full primary display
@@ -90,39 +72,46 @@ def capture_thread() -> None:
             h = imagehash.phash(img)
             if last_hash is None or (h - last_hash) >= config.HASH_DIFF_THRESHOLD:
                 last_hash = h
+                png = _downscaled_png(img, config.DOWNSCALE_WIDTH)
                 name = OUT / f"kf_{datetime.now(timezone.utc):%H%M%S_%f}.png"
-                name.write_bytes(_downscaled_png(img, config.DOWNSCALE_WIDTH))
-                with _lock:
-                    _recent.append(name)
-                    del _recent[:-config.KEEP_LAST]
-                _log("SCREEN", f"keyframe {name.name}")
-
-                if config.PROACTIVITY == "continuous":
-                    text = narrate(name.read_bytes())
-                    _log("VISION", f"{name.name}: {text}")
-                # NOTE: hybrid's error-chime needs a CHEAP per-frame signal so we
-                # don't run the VLM on every frame (that would just be continuous
-                # + costly). That signal is OCR (tesseract), added in Phase 1.
-                # Until then, hybrid == ask-only. When OCR lands, replace this
-                # with:  ocr_text = ocr(name); if _has_error(ocr_text): chime.
-                elif config.PROACTIVITY == "hybrid":
-                    pass  # ask-only in Phase 0; error-chime activates with OCR
+                name.write_bytes(png)
+                if config.CONTINUOUS_NARRATION:
+                    # translate everything, always -- this is the free local layer
+                    _log("VISION", narrate(png).replace("\n", " | "))
+                else:
+                    _log("SCREEN", f"keyframe {name.name}")
             time.sleep(1.0 / config.FPS)
 
 
-def trigger_loop() -> None:
-    mode = config.PROACTIVITY
-    _log("SYS", f"proactivity={mode} scope={config.CAPTURE_SCOPE} "
-                f"audio={config.AUDIO_MODE}(enabled={config.AUDIO_ENABLED})")
-    _log("SYS", "ready — press ENTER to ask; Ctrl-C to quit")
+def ask_claude_preview() -> None:
+    """SILENT Tier-2 stand-in: show the stream window an ask would send to Claude.
+
+    In Phase 3 this becomes a real MCP call: the server exposes _stream, Claude
+    pulls it + reasons. Here we just print it so the payload is visible.
+    """
+    with _lock:
+        window = list(_stream)
+    _log("SYS", f"--- you asked -> would send these {len(window)} lines to Claude ---")
+    for ln in window:
+        print("   " + ln, flush=True)
+    _log("SYS", "--- (Tier-2 Claude call not wired in Phase 0) ---")
+
+
+def input_loop() -> None:
+    _log("SYS", f"proactivity={config.PROACTIVITY} (Claude speaks only when asked)")
+    _log("SYS", f"scope={config.CAPTURE_SCOPE} audio={config.AUDIO_MODE}"
+                f"(enabled={config.AUDIO_ENABLED}) continuous_narration="
+                f"{config.CONTINUOUS_NARRATION}")
+    _log("SYS", "Tier 1 translating your screen continuously. "
+                "Press ENTER to ask Claude; Ctrl-C to quit.")
     for _ in sys.stdin:
-        _narrate_recent("explicit ask")
+        ask_claude_preview()
 
 
 def main() -> None:
     threading.Thread(target=capture_thread, daemon=True).start()
     try:
-        trigger_loop()
+        input_loop()
     except KeyboardInterrupt:
         _log("SYS", "shutting down")
 
