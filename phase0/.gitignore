@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 keyframes/
 timeline.log
+voice_lines.log
