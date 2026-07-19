@@ -71,8 +71,12 @@ Framing: the **laptop is C2** (command node) — runs Claude Code, the MCP serve
 orchestration, and holds the merged stream doc. The beefier nodes do GPU-heavy
 perception. Perception is embarrassingly parallel, so distributing it is ideal.
 
-**ACTION NEEDED — audit each node.** On `l3`, `echo 7`, `Rick Sanchez`, and the
-laptop, run:
+**DONE (2026-07-19) — see `AUDIT.md`.** Audit ran live on all real nodes; the
+fleet is 3 machines (laptop, `ricksanchez`, `l3e7`) and roles are assigned there.
+Key result: **Tier 1 can run fully local today** — `ricksanchez` (RTX 4090)
+already has `llama3.2-vision:11b` + `moondream`, and the laptop reaches its
+Ollama over the LAN, so no hosted narrator is needed. Original instructions kept
+below for reference. To re-audit, run:
 ```bash
 git pull
 bash scripts/fleet_audit.sh > audit_<node>.txt
@@ -103,7 +107,7 @@ bolt on the Tier-2 Claude reasoning loop + triggering + MCP output.
 
 ## Next steps (in order)
 
-1. Run `fleet_audit.sh` on all 4 nodes; hand outputs to Claude → assign roles.
+1. ~~Run `fleet_audit.sh` on all 4 nodes; assign roles.~~ DONE → `AUDIT.md`. A Windows counterpart `scripts/fleet_audit.ps1` was added for l3e7/laptop. A runnable Phase-0 skeleton lives in `phase0/`.
 2. Pull ScreenMind into the repo; study `analyzer.py` / `capture/` / `dedup.py`.
 3. Phase 0: hotkey → keyframes → text stream → Claude Code, end to end.
 4. Phase 1: add OmniParser + OCR + local narrator → the rolling context doc.

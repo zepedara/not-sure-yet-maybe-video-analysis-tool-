@@ -1,0 +1,4 @@
+mss>=9.0        # fast cross-platform screen capture
+Pillow>=10.0    # image handling / downscale
+imagehash>=4.3  # perceptual hash for change detection
+requests>=2.31  # talk to the local Ollama VLM on ricksanchez
