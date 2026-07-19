@@ -63,7 +63,10 @@ def run() -> None:
         if len(buf) < window:
             continue
         chunk, buf = buf[:window], buf[window:]
-        segs, _ = model.transcribe(chunk, language="en", vad_filter=True, beam_size=1)
+        segs, _ = model.transcribe(chunk, language="en", beam_size=1,
+                                   condition_on_previous_text=False,
+                                   vad_filter=True,
+                                   vad_parameters=dict(min_silence_duration_ms=500))
         text = " ".join(s.text.strip() for s in segs).strip()
         if text:
             _append(text)

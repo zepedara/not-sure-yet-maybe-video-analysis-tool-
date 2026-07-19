@@ -3,7 +3,8 @@ mss>=9.0            # fast cross-platform screen capture
 Pillow>=10.0       # image handling / downscale
 imagehash>=4.3     # perceptual hash for change detection
 requests>=2.31     # talk to the local Ollama VLM on ricksanchez
-pytesseract>=0.3.10  # Phase 1 OCR (needs Tesseract binary installed separately)
+winocr>=0.0.11       # Phase 1 OCR primary (Windows.Media.Ocr, ~12x faster than tesseract)
+pytesseract>=0.3.10  # OCR fallback (needs Tesseract binary)
 # Voice (Phase 2 — runs as its own process)
 faster-whisper>=1.0  # local speech-to-text (CPU/int8 by default)
 sounddevice>=0.4     # mic capture

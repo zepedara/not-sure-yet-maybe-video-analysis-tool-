@@ -149,6 +149,15 @@ def start(background: bool = True) -> None:
         threading.Thread(target=_vision_worker, daemon=True).start()
     if config.OCR_ENABLED and ocr.available():
         threading.Thread(target=_ocr_worker, daemon=True).start()
+    def _warmup():
+        try:
+            import io as _io
+            from PIL import Image as _Img
+            b=_io.BytesIO(); _Img.new("RGB",(32,32)).save(b,format="JPEG")
+            narrate(b.getvalue())  # triggers model load + kernel compile on rick
+        except Exception:
+            pass
+    threading.Thread(target=_warmup, daemon=True).start()
     _emit("SYS", "perception started - translating the screen continuously")
     if config.AUDIO_ENABLED:
         try:

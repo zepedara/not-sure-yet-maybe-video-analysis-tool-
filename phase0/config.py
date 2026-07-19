@@ -39,7 +39,7 @@ JPEG_QUALITY = 80             # JPEG beats PNG ~25x on size+encode
 DOWNSCALE_WIDTH = NARRATE_WIDTH  # back-compat alias
 VISION_WORKERS = 2            # concurrent narration workers (hide the ~400ms each)
 STREAM_WINDOW = 12            # recent timeline lines = the "ask Claude" payload
-OLLAMA_KEEP_ALIVE = "30m"     # keep moondream resident on rick (no reload stalls)
+OLLAMA_KEEP_ALIVE = -1        # pin moondream in rick VRAM (per-request; no server restart)
 
 # --- Tier-1 narrator (local VLM on ricksanchez) -------------------------------
 OLLAMA_HOST = "http://ricksanchez:11434"   # verified reachable from the laptop LAN
@@ -66,3 +66,7 @@ SAMPLE_RATE = 16000
 # --- OCR latency levers (added; async worker uses these) ----------------------
 OCR_WIDTH = 1600              # OCR input width (accuracy vs speed); runs off-thread
 OCR_MIN_INTERVAL = 1.5        # seconds between OCR passes (~1.5s each; async)
+
+# --- narrator latency caps (research-guided) ----------------------------------
+NARRATE_MAX_TOKENS = 96       # bound decode length -> bounds worst-case latency
+NARRATE_CTX = 4096            # don't use ollama's 32k default (KV + prompt-eval scale)
