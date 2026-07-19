@@ -96,7 +96,10 @@ These are DESIGN section 7 questions the audit can't settle — they're preferen
 - ~~**Phase 1** — tesseract OCR for exact on-screen text.~~ **DONE** — tesseract
   5.4 installed on the laptop; `phase0/ocr.py` + perception emit an OCR line
   per keyframe alongside the VISION line. Verified live (read a GitHub page).
-- **Phase 2** — mic capture on laptop + `faster-whisper` on l3e7 -> voice
-  questions enter the same stream.
+- ~~**Phase 2** — voice.~~ **DONE + tested live** — mic (Arctis) + faster-whisper
+  on the **laptop** (not l3e7 — audio originates here) -> YOU lines in the stream.
+  Runs on **CPU/int8** (GPU path needs `cublas64_12.dll`, not installed) and as a
+  **separate process** (CTranslate2 segfaults if loaded alongside mss/PIL/tesseract
+  in-process); perception tails its output. Verified: real speech transcribed live.
 - **Phase 3 polish** — real Tier-2 flow / prompt-cache; optionally upgrade rick's
   ollama for llama3.2-vision-quality narration.

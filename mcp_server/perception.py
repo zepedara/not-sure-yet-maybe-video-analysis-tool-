@@ -109,3 +109,9 @@ def start(background: bool = True) -> None:
     t = threading.Thread(target=_loop, daemon=True)
     t.start()
     _emit("SYS", "perception started - translating the screen continuously")
+    if config.AUDIO_ENABLED:
+        try:
+            import voice
+            voice.spawn_and_tail(_emit)  # separate process (avoids native segfault)
+        except Exception as e:
+            _emit("SYS", f"voice not started: {e}")

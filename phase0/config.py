@@ -46,3 +46,14 @@ NARRATOR_MODEL = "moondream:latest"        # works on rick (ollama 0.31.2); llam
 OCR_ENABLED = True
 TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Windows install
 OCR_MAX_CHARS = 600           # truncate noisy full-screen OCR in the stream
+
+# --- Phase 2: voice (mic -> faster-whisper, local) ----------------------------
+# Your spoken questions/narration enter the same stream as YOU lines. Runs on
+# the laptop's RTX 4070 (GPU verified). Highest-signal input = your intent.
+AUDIO_ENABLED = True          # (overrides the Phase-0 placeholder above)
+MIC_DEVICE = None             # None = system default (Arctis Nova Pro); or an index
+WHISPER_MODEL = "base"        # base is fast+decent; "small"/"medium" = better/slower
+WHISPER_DEVICE = "cpu"        # GPU needs cublas64_12.dll (not installed); cpu int8 is fast enough
+WHISPER_COMPUTE = "int8"
+VOICE_WINDOW_SEC = 4.0        # transcribe this much audio at a time
+SAMPLE_RATE = 16000

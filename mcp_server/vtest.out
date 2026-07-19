@@ -1,0 +1,7 @@
+importing perception…
+EXCEPTION:
+Traceback (most recent call last):
+  File "C:\Users\m808b\AppData\Local\Temp\vtest.py", line 7, in <module>
+    import perception
+ModuleNotFoundError: No module named 'perception'
+
