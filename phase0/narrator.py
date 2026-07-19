@@ -1,16 +1,17 @@
 """Tier-1 narrator client — turns a keyframe into ~text using a LOCAL VLM.
 
-Points at ricksanchez's Ollama (RTX 4090) by default. No hosted API, no cost,
-nothing leaves the LAN. Falls back cleanly if the node is unreachable.
+Points at ricksanchez's Ollama (RTX 4090) by default (see config.py). No hosted
+API, no cost, nothing leaves the LAN. Falls back cleanly if the node is down.
 """
 from __future__ import annotations
 import base64
+import os
 import requests
 
-# ricksanchez over the fleet LAN. Override with OLLAMA_HOST env if needed.
-import os
-OLLAMA_URL = os.environ.get("OLLAMA_HOST", "http://ricksanchez:11434")
-MODEL = os.environ.get("NARRATOR_MODEL", "llama3.2-vision:11b")  # moondream = lighter
+import config
+
+OLLAMA_URL = os.environ.get("OLLAMA_HOST", config.OLLAMA_HOST)
+MODEL = os.environ.get("NARRATOR_MODEL", config.NARRATOR_MODEL)
 
 PROMPT = (
     "You are a perception layer watching a developer's screen. In 2-3 terse "
@@ -36,5 +37,4 @@ def narrate(png_bytes: bytes, timeout: float = 60.0) -> str:
 
 if __name__ == "__main__":
     import sys
-    data = open(sys.argv[1], "rb").read()
-    print(narrate(data))
+    print(narrate(open(sys.argv[1], "rb").read()))
