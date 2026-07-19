@@ -39,3 +39,10 @@ STREAM_WINDOW = 12            # recent timeline lines = the "ask Claude" payload
 # --- Tier-1 narrator (local VLM on ricksanchez) -------------------------------
 OLLAMA_HOST = "http://ricksanchez:11434"   # verified reachable from the laptop LAN
 NARRATOR_MODEL = "moondream:latest"        # works on rick (ollama 0.31.2); llama3.2-vision needs newer ollama (mllama arch)
+
+# --- Phase 1: OCR (exact on-screen text) --------------------------------------
+# moondream describes the scene; tesseract captures literal strings (errors,
+# paths, commands). Runs locally on the laptop where frames already live.
+OCR_ENABLED = True
+TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Windows install
+OCR_MAX_CHARS = 600           # truncate noisy full-screen OCR in the stream

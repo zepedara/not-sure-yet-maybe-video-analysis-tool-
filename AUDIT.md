@@ -93,7 +93,9 @@ These are DESIGN section 7 questions the audit can't settle — they're preferen
 
 ## Remaining
 
-- **Phase 1** — add `tesseract` (missing on all nodes) for exact on-screen text.
+- ~~**Phase 1** — tesseract OCR for exact on-screen text.~~ **DONE** — tesseract
+  5.4 installed on the laptop; `phase0/ocr.py` + perception emit an OCR line
+  per keyframe alongside the VISION line. Verified live (read a GitHub page).
 - **Phase 2** — mic capture on laptop + `faster-whisper` on l3e7 -> voice
   questions enter the same stream.
 - **Phase 3 polish** — real Tier-2 flow / prompt-cache; optionally upgrade rick's

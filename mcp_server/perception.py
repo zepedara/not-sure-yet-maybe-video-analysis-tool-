@@ -22,6 +22,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "phase0"))
 import config              # noqa: E402
 from narrator import narrate  # noqa: E402
+import ocr  # noqa: E402
 
 TIMELINE = Path(__file__).resolve().parent.parent / "phase0" / "timeline.log"
 
@@ -67,6 +68,10 @@ def snapshot_now() -> str:
     png, _ = _grab_png()
     text = narrate(png).replace("\n", " | ")
     _emit("VISION", text + "  (on-demand)")
+    if ocr.available():
+        ot = ocr.ocr_png(png)
+        if ot:
+            _emit("OCR", ot)
     return text
 
 
@@ -86,6 +91,10 @@ def _loop() -> None:
                 last_hash = h
                 if config.CONTINUOUS_NARRATION:
                     _emit("VISION", narrate(png).replace("\n", " | "))
+                if ocr.available():
+                    ot = ocr.ocr_png(png)
+                    if ot:
+                        _emit("OCR", ot)
         except Exception as e:  # keep the thread alive through transient errors
             _emit("SYS", f"perception error: {e}")
         time.sleep(1.0 / config.FPS)

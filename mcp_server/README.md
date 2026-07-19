@@ -7,8 +7,8 @@ ask; these tools are how it looks.
 
 ## What it does
 On launch it starts the continuous local perception loop (`perception.py`):
-full screen @1fps -> pHash change-detect -> rick's 4090 narrates each change ->
-rolling stream + `../phase0/timeline.log`. Then it exposes two MCP tools:
+full screen @1fps -> pHash change-detect -> rick's 4090 narrates each change,
+plus local tesseract OCR for exact text -> rolling stream + `../phase0/timeline.log`. Then it exposes two MCP tools:
 
 | Tool | Use |
 |---|---|
