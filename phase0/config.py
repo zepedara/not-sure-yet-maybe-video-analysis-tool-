@@ -31,10 +31,15 @@ PROACTIVITY = "silent"        # one of: "silent", "hybrid", "continuous"
 CONTINUOUS_NARRATION = True
 
 # --- Capture / narration tuning (levers) --------------------------------------
-FPS = 1.0                     # sample rate (frames/sec)
+CAPTURE_FPS = 6.0             # how often we SAMPLE the screen for changes (cheap)
+FPS = CAPTURE_FPS             # back-compat alias
 HASH_DIFF_THRESHOLD = 6       # pHash hamming distance to count as a new keyframe
-DOWNSCALE_WIDTH = 1280        # width sent to the VLM (cost/latency lever)
+NARRATE_WIDTH = 896           # width sent to the VLM (JPEG); smaller = less network
+JPEG_QUALITY = 80             # JPEG beats PNG ~25x on size+encode
+DOWNSCALE_WIDTH = NARRATE_WIDTH  # back-compat alias
+VISION_WORKERS = 2            # concurrent narration workers (hide the ~400ms each)
 STREAM_WINDOW = 12            # recent timeline lines = the "ask Claude" payload
+OLLAMA_KEEP_ALIVE = "30m"     # keep moondream resident on rick (no reload stalls)
 
 # --- Tier-1 narrator (local VLM on ricksanchez) -------------------------------
 OLLAMA_HOST = "http://ricksanchez:11434"   # verified reachable from the laptop LAN
@@ -55,5 +60,9 @@ MIC_DEVICE = None             # None = system default (Arctis Nova Pro); or an i
 WHISPER_MODEL = "base"        # base is fast+decent; "small"/"medium" = better/slower
 WHISPER_DEVICE = "cpu"        # GPU needs cublas64_12.dll (not installed); cpu int8 is fast enough
 WHISPER_COMPUTE = "int8"
-VOICE_WINDOW_SEC = 4.0        # transcribe this much audio at a time
+VOICE_WINDOW_SEC = 1.2        # shorter = lower speak->text latency (compute is only ~140ms)
 SAMPLE_RATE = 16000
+
+# --- OCR latency levers (added; async worker uses these) ----------------------
+OCR_WIDTH = 1600              # OCR input width (accuracy vs speed); runs off-thread
+OCR_MIN_INTERVAL = 1.5        # seconds between OCR passes (~1.5s each; async)

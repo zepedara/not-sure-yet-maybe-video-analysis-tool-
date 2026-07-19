@@ -26,7 +26,8 @@ def narrate(png_bytes: bytes, timeout: float = 60.0) -> str:
     try:
         r = requests.post(
             f"{OLLAMA_URL}/api/generate",
-            json={"model": MODEL, "prompt": PROMPT, "images": [b64], "stream": False},
+            json={"model": MODEL, "prompt": PROMPT, "images": [b64],
+                  "stream": False, "keep_alive": getattr(config, "OLLAMA_KEEP_ALIVE", "30m")},
             timeout=timeout,
         )
         r.raise_for_status()
