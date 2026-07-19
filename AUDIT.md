@@ -72,13 +72,29 @@ These are DESIGN section 7 questions the audit can't settle — they're preferen
 4. **Full-screen vs a chosen window/region?**
 5. **How proactive** — silent-until-asked, or allowed to interrupt on errors?
 
-## Concrete next steps (revised from HANDOFF, now unblocked)
+## Progress
 
-1. Run fleet audit -> assign roles: **DONE (this file)**.
-2. **Phase 0 skeleton** — see `phase0/`: screen capture @1fps + pHash
-   change-detect on the laptop -> cache keyframes -> on hotkey, narrate the
-   last keyframes via **rick's local `llama3.2-vision`** (proves the local
-   Tier-1 path end to end) and print. No hosted calls required.
-3. Wire the narrated lines into a rolling `timeline.log` (the "stream").
-4. Add `faster-whisper` on l3e7 for voice; add `tesseract` for exact OCR.
-5. Expose the timeline as an MCP server the laptop's Claude Code pulls on demand.
+1. Fleet audit -> roles: **DONE** (this file).
+2. **Phase 0** (`phase0/`): full-screen capture @1fps + pHash change-detect ->
+   continuous local narration -> `timeline.log`. **DONE + smoke-tested live**
+   (~0.5s/frame on rick's 4090).
+3. **Phase 3 MCP server** (`mcp_server/`): continuous Tier-1 perception + MCP
+   tools `get_recent_context` / `describe_screen_now` so Claude Code pulls
+   screen context on ask. **DONE + tested** (tools registered, live returns).
+   This is the "ask -> Claude sees screen -> answers" loop; proactivity=silent.
+
+### Findings from the live tests
+- `llama3.2-vision:11b` is **broken on rick** (ollama 0.31.2: "unknown model
+  architecture: mllama"). Default narrator switched to **`moondream:latest`**
+  (works, ~0.5s). To use llama3.2-vision, upgrade rick's ollama.
+- moondream narration is scene-accurate but **misreads exact text** -> exactly
+  what **Phase 1 (tesseract OCR)** fixes: moondream for the scene, OCR for
+  literal strings.
+
+## Remaining
+
+- **Phase 1** — add `tesseract` (missing on all nodes) for exact on-screen text.
+- **Phase 2** — mic capture on laptop + `faster-whisper` on l3e7 -> voice
+  questions enter the same stream.
+- **Phase 3 polish** — real Tier-2 flow / prompt-cache; optionally upgrade rick's
+  ollama for llama3.2-vision-quality narration.

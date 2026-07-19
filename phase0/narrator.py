@@ -14,9 +14,9 @@ OLLAMA_URL = os.environ.get("OLLAMA_HOST", config.OLLAMA_HOST)
 MODEL = os.environ.get("NARRATOR_MODEL", config.NARRATOR_MODEL)
 
 PROMPT = (
-    "You are a perception layer watching a developer's screen. In 2-3 terse "
-    "lines, state: the active app/window, what the user appears to be doing, "
-    "and any error text, dialog, or notable state. Be concrete. No preamble."
+    "Describe what is on this screen in 2-3 plain sentences: the active "
+    "app or window, what the user appears to be doing, and any visible error "
+    "text or dialog. Write prose only - do not output coordinates or boxes."
 )
 
 
