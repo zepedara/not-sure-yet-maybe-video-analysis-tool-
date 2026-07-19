@@ -38,4 +38,4 @@ STREAM_WINDOW = 12            # recent timeline lines = the "ask Claude" payload
 
 # --- Tier-1 narrator (local VLM on ricksanchez) -------------------------------
 OLLAMA_HOST = "http://ricksanchez:11434"   # verified reachable from the laptop LAN
-NARRATOR_MODEL = "llama3.2-vision:11b"      # moondream:latest = lighter fallback
+NARRATOR_MODEL = "moondream:latest"        # works on rick (ollama 0.31.2); llama3.2-vision needs newer ollama (mllama arch)
