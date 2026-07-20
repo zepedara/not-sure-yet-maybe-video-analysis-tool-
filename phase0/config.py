@@ -43,7 +43,7 @@ OLLAMA_KEEP_ALIVE = -1        # pin moondream in rick VRAM (per-request; no serv
 
 # --- Tier-1 narrator (local VLM on ricksanchez) -------------------------------
 OLLAMA_HOST = "http://ricksanchez:11434"   # verified reachable from the laptop LAN
-NARRATOR_MODEL = "moondream:latest"        # works on rick (ollama 0.31.2); llama3.2-vision needs newer ollama (mllama arch)
+NARRATOR_MODEL = "qwen2.5vl:3b"            # accurate scene understanding (~1s); moondream (274ms) echoes/emits bboxes = unusable
 
 # --- Phase 1: OCR (exact on-screen text) --------------------------------------
 # moondream describes the scene; tesseract captures literal strings (errors,
