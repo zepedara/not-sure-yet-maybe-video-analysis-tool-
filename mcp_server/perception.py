@@ -63,30 +63,61 @@ def _emit(source: str, text: str) -> str:
     return line
 
 
-def _capture_thread() -> None:
-    """Sample fast, change-detect cheaply, hand changed frames to the workers."""
-    last_hash = None
-    fid = 0
+def _dispatch(img: "Image.Image", state: dict) -> None:
+    """pHash-gate a captured RGB frame; enqueue changed frames for VISION + OCR."""
+    h = imagehash.phash(img)
+    if state["hash"] is not None and (h - state["hash"]) < config.HASH_DIFF_THRESHOLD:
+        return
+    state["hash"] = h
+    state["fid"] += 1
+    jpeg = _jpeg(img, config.NARRATE_WIDTH)
+    if config.OCR_ENABLED:
+        with _latest_lock:
+            _latest["jpeg"] = _jpeg(img, config.OCR_WIDTH)
+            _latest["id"] = state["fid"]
+    try:
+        _frame_q.put_nowait(jpeg)
+    except queue.Full:
+        pass  # workers busy; the freshest frame still reaches OCR
+
+
+def _capture_bettercam(state: dict) -> bool:
+    """DXGI capture (event-driven, ~0.5ms). Returns False if unavailable."""
+    try:
+        import bettercam
+    except Exception:
+        return False
+    try:
+        cam = bettercam.create(output_idx=max(0, config.MONITOR_INDEX - 1),
+                               output_color="BGRA")
+        cam.start(target_fps=int(config.CAPTURE_FPS))
+    except Exception as e:
+        _emit("SYS", f"bettercam init failed ({str(e)[:50]}); using mss")
+        return False
+    _emit("SYS", "capture: bettercam (DXGI)")
+    while True:
+        raw = cam.get_latest_frame()  # blocks until the screen actually changes
+        if raw is None:
+            continue
+        _dispatch(Image.fromarray(raw[:, :, [2, 1, 0]]), state)  # BGRA->RGB
+    return True
+
+
+def _capture_mss(state: dict) -> None:
+    _emit("SYS", "capture: mss (GDI)")
     with mss.mss() as sct:
         mon = sct.monitors[config.MONITOR_INDEX]
         while True:
             shot = sct.grab(mon)
-            img = Image.frombytes("RGB", shot.size, shot.rgb)
-            h = imagehash.phash(img)
-            if last_hash is None or (h - last_hash) >= config.HASH_DIFF_THRESHOLD:
-                last_hash = h
-                fid += 1
-                jpeg = _jpeg(img, config.NARRATE_WIDTH)
-                if config.OCR_ENABLED:
-                    ocr_jpeg = _jpeg(img, config.OCR_WIDTH)
-                    with _latest_lock:
-                        _latest["jpeg"] = ocr_jpeg
-                        _latest["id"] = fid
-                try:
-                    _frame_q.put_nowait(jpeg)
-                except queue.Full:
-                    pass  # workers busy; the freshest frame still reaches OCR
+            _dispatch(Image.frombytes("RGB", shot.size, shot.rgb), state)
             time.sleep(1.0 / config.CAPTURE_FPS)
+
+
+def _capture_thread() -> None:
+    state = {"hash": None, "fid": 0}
+    if config.USE_BETTERCAM and _capture_bettercam(state):
+        return
+    _capture_mss(state)
 
 
 def _vision_worker() -> None:

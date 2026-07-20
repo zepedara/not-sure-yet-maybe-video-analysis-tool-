@@ -20,22 +20,39 @@ import config
 
 VOICE_OUT = Path(__file__).resolve().parent / "voice_lines.log"
 
+def _add_cuda_dlls():
+    """Put the pip-installed CUDA 12 DLLs (cublas/cudnn/cudart) on the loader path
+    so faster-whisper can use the GPU on Windows. No-op if not present."""
+    import os, glob, site
+    try:
+        sps = [p for p in site.getsitepackages() if "site-packages" in p]
+        for sp in sps:
+            for d in glob.glob(os.path.join(sp, "nvidia", "*", "bin")):
+                os.environ["PATH"] = d + os.pathsep + os.environ["PATH"]
+                try: os.add_dll_directory(d)
+                except Exception: pass
+    except Exception:
+        pass
+
+
 
 # ---- the isolated worker (runs when this file is executed directly) ----------
 def _load_model():
+    _add_cuda_dlls()
     from faster_whisper import WhisperModel
-    tried = [(config.WHISPER_DEVICE, config.WHISPER_COMPUTE)]
-    if tried[0] != ("cpu", "int8"):
-        tried.append(("cpu", "int8"))
-    for dev, ct in tried:
+    cpu_model = getattr(config, "WHISPER_MODEL_CPU_FALLBACK", "base")
+    tried = [(config.WHISPER_DEVICE, config.WHISPER_COMPUTE, config.WHISPER_MODEL)]
+    if (config.WHISPER_DEVICE, config.WHISPER_COMPUTE) != ("cpu", "int8"):
+        tried.append(("cpu", "int8", cpu_model))  # light model if GPU unavailable
+    for dev, ct, model_name in tried:
         try:
-            m = WhisperModel(config.WHISPER_MODEL, device=dev, compute_type=ct)
+            m = WhisperModel(model_name, device=dev, compute_type=ct)
             list(m.transcribe(np.zeros(config.SAMPLE_RATE, dtype=np.float32),
                               language="en")[0])  # force encode -> catch DLL errors
-            _append(f"__READY__ whisper on {dev}/{ct}")
+            _append(f"__READY__ whisper {model_name} on {dev}/{ct}")
             return m
         except Exception as e:
-            _append(f"__INFO__ {dev}/{ct} unusable: {str(e)[:60]}")
+            _append(f"__INFO__ {dev}/{ct} {model_name} unusable: {str(e)[:50]}")
     raise RuntimeError("faster-whisper failed on all devices")
 
 

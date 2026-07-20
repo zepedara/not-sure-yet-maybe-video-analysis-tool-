@@ -11,3 +11,8 @@ sounddevice>=0.4     # mic capture
 numpy>=1.24
 # MCP server (Phase 3)
 mcp[cli]>=1.0        # exposes screen context to Claude Code
+# GPU whisper (Windows): provides cublas64_12 / cudnn64_9 / cudart64_12
+nvidia-cublas-cu12
+nvidia-cudnn-cu12==9.*
+nvidia-cuda-runtime-cu12
+bettercam>=1.0  # DXGI capture (BGRA mode; no cv2 needed)

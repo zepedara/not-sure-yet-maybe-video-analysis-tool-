@@ -57,10 +57,10 @@ OCR_MAX_CHARS = 600           # truncate noisy full-screen OCR in the stream
 # the laptop's RTX 4070 (GPU verified). Highest-signal input = your intent.
 AUDIO_ENABLED = True          # (overrides the Phase-0 placeholder above)
 MIC_DEVICE = None             # None = system default (Arctis Nova Pro); or an index
-WHISPER_MODEL = "base"        # base is fast+decent; "small"/"medium" = better/slower
-WHISPER_DEVICE = "cpu"        # GPU needs cublas64_12.dll (not installed); cpu int8 is fast enough
-WHISPER_COMPUTE = "int8"
-VOICE_WINDOW_SEC = 1.2        # shorter = lower speak->text latency (compute is only ~140ms)
+WHISPER_MODEL = "large-v3-turbo"  # GPU makes this fast + accurate; falls back to base
+WHISPER_DEVICE = "cuda"       # GPU enabled via nvidia-cu12 wheels (see voice._add_cuda_dlls); ~64ms
+WHISPER_COMPUTE = "float16"
+VOICE_WINDOW_SEC = 1.0        # GPU transcribe ~64ms; window is the latency floor
 SAMPLE_RATE = 16000
 
 # --- OCR latency levers (added; async worker uses these) ----------------------
@@ -68,5 +68,9 @@ OCR_WIDTH = 1600              # OCR input width (accuracy vs speed); runs off-th
 OCR_MIN_INTERVAL = 1.5        # seconds between OCR passes (~1.5s each; async)
 
 # --- narrator latency caps (research-guided) ----------------------------------
-NARRATE_MAX_TOKENS = 96       # bound decode length -> bounds worst-case latency
+NARRATE_MAX_TOKENS = 64       # bound decode length -> bounds worst-case latency
 NARRATE_CTX = 4096            # don't use ollama's 32k default (KV + prompt-eval scale)
+WHISPER_MODEL_CPU_FALLBACK = "base"   # if GPU unavailable, use a light model on CPU
+
+# --- capture backend ----------------------------------------------------------
+USE_BETTERCAM = True          # DXGI capture: ~0.5ms grab (vs mss ~13ms), event-driven
