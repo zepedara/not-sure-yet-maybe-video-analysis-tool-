@@ -83,7 +83,7 @@ ONDEMAND_MODEL = "qwen2.5vl:7b"   # better at buttons/icons/dense UI; ~slower
 ONDEMAND_WIDTH = 1536             # higher res for on-demand fidelity
 
 # --- VAD utterance capture (voice) --------------------------------------------
-VAD_RMS_THRESHOLD = 0.012     # speech vs silence (adaptive noise floor on top)
-VAD_HANGOVER_SEC = 0.6        # pause length that ends an utterance -> transcribe now
+VAD_RMS_THRESHOLD = 0.007     # catch quieter/trailing words
+VAD_HANGOVER_SEC = 1.3        # allow mid-sentence pauses before committing
 VAD_MIN_SPEECH_SEC = 0.35     # ignore blips shorter than this
-VAD_MAX_UTT_SEC = 15.0        # force-flush very long utterances
+VAD_MAX_UTT_SEC = 25.0        # allow long thoughts
