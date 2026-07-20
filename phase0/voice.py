@@ -89,24 +89,49 @@ def run(parent_pid: int = 0) -> None:
     def _cb(indata, frames, t, status):
         audio_q.put(indata[:, 0].copy())
 
-    stream = sd.InputStream(samplerate=config.SAMPLE_RATE, channels=1,
-                            dtype="float32", device=config.MIC_DEVICE, callback=_cb)
+    sr = config.SAMPLE_RATE
+    stream = sd.InputStream(samplerate=sr, channels=1, dtype="float32",
+                            device=config.MIC_DEVICE, callback=_cb,
+                            blocksize=int(sr * 0.1))  # 100ms blocks
     stream.start()
     _append("__LISTENING__")
-    window = int(config.SAMPLE_RATE * config.VOICE_WINDOW_SEC)
-    buf = np.empty(0, dtype=np.float32)
-    while True:
-        buf = np.concatenate([buf, audio_q.get()])
-        if len(buf) < window:
-            continue
-        chunk, buf = buf[:window], buf[window:]
-        segs, _ = model.transcribe(chunk, language="en", beam_size=1,
-                                   condition_on_previous_text=False,
-                                   vad_filter=True,
-                                   vad_parameters=dict(min_silence_duration_ms=500))
+
+    # Energy-VAD utterance capture: accumulate while you speak, transcribe the
+    # WHOLE utterance the moment you pause. Adaptive noise floor.
+    thr = float(getattr(config, "VAD_RMS_THRESHOLD", 0.012))
+    hangover = float(getattr(config, "VAD_HANGOVER_SEC", 0.6))
+    min_speech = float(getattr(config, "VAD_MIN_SPEECH_SEC", 0.35))
+    max_utt = float(getattr(config, "VAD_MAX_UTT_SEC", 15.0))
+    noise = 0.005
+
+    buf, speaking, sil, spoke = [], False, 0.0, 0.0
+    def flush():
+        if spoke < min_speech or not buf:
+            return
+        audio = np.concatenate(buf)
+        segs, _ = model.transcribe(audio, language="en", beam_size=1,
+                                   condition_on_previous_text=False, vad_filter=True)
         text = " ".join(s.text.strip() for s in segs).strip()
         if text:
             _append(text)
+
+    while True:
+        block = audio_q.get()
+        dur = len(block) / sr
+        rms = float(np.sqrt(np.mean(block ** 2)) + 1e-9)
+        active = rms > max(thr, noise * 3.0)
+        if not active and not speaking:
+            noise = 0.9 * noise + 0.1 * rms  # track ambient noise floor
+        if active:
+            speaking, sil, spoke = True, 0.0, spoke + dur
+            buf.append(block)
+        elif speaking:
+            buf.append(block)  # trailing silence keeps word tails
+            sil += dur
+            if sil >= hangover:
+                flush(); buf, speaking, sil, spoke = [], False, 0.0, 0.0
+        if speaking and spoke >= max_utt:
+            flush(); buf, speaking, sil, spoke = [], False, 0.0, 0.0
 
 
 # ---- used by the perception process: spawn this as a subprocess + tail it ----

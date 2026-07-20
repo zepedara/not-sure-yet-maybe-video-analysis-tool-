@@ -81,3 +81,9 @@ USE_BETTERCAM = True          # DXGI capture: ~0.5ms grab (vs mss ~13ms), event-
 # model since accuracy matters more than speed when you actually ask.
 ONDEMAND_MODEL = "qwen2.5vl:7b"   # better at buttons/icons/dense UI; ~slower
 ONDEMAND_WIDTH = 1536             # higher res for on-demand fidelity
+
+# --- VAD utterance capture (voice) --------------------------------------------
+VAD_RMS_THRESHOLD = 0.012     # speech vs silence (adaptive noise floor on top)
+VAD_HANGOVER_SEC = 0.6        # pause length that ends an utterance -> transcribe now
+VAD_MIN_SPEECH_SEC = 0.35     # ignore blips shorter than this
+VAD_MAX_UTT_SEC = 15.0        # force-flush very long utterances
