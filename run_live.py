@@ -10,6 +10,10 @@ import os, sys, time
 from pathlib import Path
 
 os.system("")  # enable ANSI colors on Windows consoles
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 sys.path.insert(0, str(Path(__file__).parent / "mcp_server"))
 import perception  # noqa: E402
 
@@ -18,9 +22,10 @@ C = {"VISION": "\033[38;5;44m", "OCR": "\033[38;5;179m",
 RESET = "\033[0m"; BOLD = "\033[1m"
 
 def main():
-    print(f"{BOLD}╔══════════════════════════════════════════════════════════════╗{RESET}")
-    print(f"{BOLD}║  DESKTOP LIVESTREAM — live perception stream                  ║{RESET}")
-    print(f"{BOLD}╚══════════════════════════════════════════════════════════════╝{RESET}")
+    bar = "=" * 62
+    print(f"{BOLD}{bar}{RESET}")
+    print(f"{BOLD}  DESKTOP LIVESTREAM - live perception stream{RESET}")
+    print(f"{BOLD}{bar}{RESET}")
     print(f"  {C['VISION']}VISION{RESET}=screen described   {C['OCR']}OCR{RESET}=exact text   "
           f"{C['YOU']}YOU{RESET}=your voice   {C['SYS']}SYS{RESET}=status")
     print("  Move around, open an error, talk into your mic.  Ctrl-C to stop.\n")

@@ -20,6 +20,24 @@ import config
 
 VOICE_OUT = Path(__file__).resolve().parent / "voice_lines.log"
 
+def _watch_parent(ppid: int) -> None:
+    """Exit this process if the parent (perception) dies — prevents orphaned
+    mic-holding voice processes after the parent is killed."""
+    import ctypes, time as _t
+    k = ctypes.windll.kernel32
+    while True:
+        h = k.OpenProcess(0x1000, False, ppid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        alive = False
+        if h:
+            code = ctypes.c_ulong()
+            k.GetExitCodeProcess(h, ctypes.byref(code))
+            k.CloseHandle(h)
+            alive = (code.value == 259)  # STILL_ACTIVE
+        if not alive:
+            os._exit(0)
+        _t.sleep(2)
+
+
 def _add_cuda_dlls():
     """Put the pip-installed CUDA 12 DLLs (cublas/cudnn/cudart) on the loader path
     so faster-whisper can use the GPU on Windows. No-op if not present."""
@@ -61,7 +79,9 @@ def _append(text: str) -> None:
         f.write(text.rstrip() + "\n")
 
 
-def run() -> None:
+def run(parent_pid: int = 0) -> None:
+    if parent_pid:
+        threading.Thread(target=_watch_parent, args=(parent_pid,), daemon=True).start()
     import sounddevice as sd
     model = _load_model()
     audio_q: queue.Queue = queue.Queue()
@@ -98,8 +118,10 @@ def spawn_and_tail(emit) -> None:
         VOICE_OUT.write_text("", encoding="utf-8")  # truncate old lines
     except OSError:
         pass
-    proc = subprocess.Popen([sys.executable, str(Path(__file__).resolve())],
+    proc = subprocess.Popen([sys.executable, str(Path(__file__).resolve()), str(os.getpid())],
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    import atexit
+    atexit.register(lambda: proc.poll() is None and proc.terminate())
     emit("SYS", f"voice: started subprocess pid={proc.pid} (loading whisper…)")
 
     def _tail():
@@ -131,4 +153,5 @@ def spawn_and_tail(emit) -> None:
 
 
 if __name__ == "__main__":
-    run()
+    _ppid = int(sys.argv[1]) if len(sys.argv) > 1 else 0
+    run(_ppid)
