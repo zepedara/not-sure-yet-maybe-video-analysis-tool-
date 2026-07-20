@@ -153,7 +153,7 @@ def snapshot_now() -> str:
         mon = sct.monitors[config.MONITOR_INDEX]
         shot = sct.grab(mon)
         img = Image.frombytes("RGB", shot.size, shot.rgb)
-    text = narrate(_jpeg(img, config.NARRATE_WIDTH)).replace("\n", " | ")
+    text = narrate(_jpeg(img, getattr(config, "ONDEMAND_WIDTH", config.NARRATE_WIDTH)), timeout=120, model=getattr(config, "ONDEMAND_MODEL", None)).replace("\n", " | ")
     _emit("VISION", text + "  (on-demand)")
     if ocr.available():
         ot = ocr.ocr_png(_jpeg(img, config.OCR_WIDTH))

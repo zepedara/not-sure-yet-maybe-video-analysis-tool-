@@ -74,3 +74,10 @@ WHISPER_MODEL_CPU_FALLBACK = "base"   # if GPU unavailable, use a light model on
 
 # --- capture backend ----------------------------------------------------------
 USE_BETTERCAM = True          # DXGI capture: ~0.5ms grab (vs mss ~13ms), event-driven
+
+# --- two-tier VLM: fast stream vs accurate on-demand -------------------------
+# Continuous stream uses NARRATOR_MODEL (3b, fast). On-demand queries
+# (describe_screen_now / the MCP "look now" tool) use the bigger, higher-fidelity
+# model since accuracy matters more than speed when you actually ask.
+ONDEMAND_MODEL = "qwen2.5vl:7b"   # better at buttons/icons/dense UI; ~slower
+ONDEMAND_WIDTH = 1536             # higher res for on-demand fidelity
