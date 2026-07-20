@@ -39,7 +39,7 @@ JPEG_QUALITY = 80             # JPEG beats PNG ~25x on size+encode
 DOWNSCALE_WIDTH = NARRATE_WIDTH  # back-compat alias
 VISION_WORKERS = 2            # concurrent narration workers (hide the ~400ms each)
 STREAM_WINDOW = 12            # recent timeline lines = the "ask Claude" payload
-OLLAMA_KEEP_ALIVE = -1        # pin moondream in rick VRAM (per-request; no server restart)
+OLLAMA_KEEP_ALIVE = "10m"     # stay hot DURING a session, free rick VRAM ~10m after idle (respects other REM models)
 
 # --- Tier-1 narrator (local VLM on ricksanchez) -------------------------------
 OLLAMA_HOST = "http://ricksanchez:11434"   # verified reachable from the laptop LAN
